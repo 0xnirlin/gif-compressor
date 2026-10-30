@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gifshrink"
+version = "1.0.0"
+description = "Make an existing GIF smaller with ffmpeg only, with an optional target file size."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+authors = [{ name = "Ziztu" }]
+keywords = ["gif", "compress", "optimize", "ffmpeg", "gif-compressor", "reduce-size"]
+classifiers = [
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Multimedia :: Graphics",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/0xnirlin/gif-compressor"
+
+[project.scripts]
+gifshrink = "gifshrink:main"
+
+[tool.setuptools]
+py-modules = ["gifshrink"]
