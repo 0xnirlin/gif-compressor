@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compress a GIF with ffmpeg: gifshrink, with a target size</title>
+<meta name="description" content="gifshrink is a free, open-source command line tool that makes a GIF smaller with ffmpeg. Fewer frames, narrower width, fewer colors, or a target size. No uploads.">
+<meta name="color-scheme" content="light dark">
+<link rel="canonical" href="https://0xnirlin.github.io/gif-compressor/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Compress a GIF with ffmpeg: gifshrink, with a target size">
+<meta property="og:description" content="gifshrink is a free, open-source command line tool that makes a GIF smaller with ffmpeg. Fewer frames, narrower width, fewer colors, or a target size. No uploads.">
+<meta property="og:url" content="https://0xnirlin.github.io/gif-compressor/">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23222'/%3E%3Crect x='5' y='6' width='22' height='4' rx='1' fill='%23ff7f7f'/%3E%3Crect x='5' y='13' width='22' height='4' rx='1' fill='%23ffdf7f'/%3E%3Crect x='5' y='20' width='22' height='4' rx='1' fill='%237fffbf'/%3E%3C/svg%3E">
+<style>:root{color-scheme:light dark;--bg:#f6f6f3;--surface:#fff;--text:#17171a;--muted:#62626b;--border:#d9d9de;--ink:#17171a;--ink-text:#fff;--code:#efefec;--link:#2457d6;--focus:#2457d6}
+@media (prefers-color-scheme:dark){:root{--bg:#131315;--surface:#1c1c20;--text:#f0f0f3;--muted:#a0a0aa;--border:#35353d;--ink:#f0f0f3;--ink-text:#131315;--code:#1a1a1e;--link:#7aa5ff;--focus:#7aa5ff}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px}
+header.top{padding:36px 0 12px}
+h1{margin:0;font-size:clamp(1.7rem,4.5vw,2.4rem);line-height:1.15;letter-spacing:-.02em}
+.sub{margin:10px 0 0;color:var(--muted);font-size:1.1rem}
+nav.jump{display:flex;flex-wrap:wrap;gap:6px 16px;margin:18px 0 0;font-size:.95rem}
+a{color:var(--link)}
+a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 0}
+.btn{display:inline-block;background:var(--ink);color:var(--ink-text);text-decoration:none;padding:10px 16px;border-radius:10px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+main section{margin:40px 0}
+h2{font-size:1.5rem;line-height:1.25;margin:0 0 12px;letter-spacing:-.01em}
+h3{font-size:1.05rem;margin:22px 0 4px}
+p{margin:8px 0}
+ul{padding-left:22px;margin:8px 0}
+li{margin:4px 0}
+pre{background:var(--code);border:1px solid var(--border);border-radius:10px;padding:14px;overflow-x:auto;font-size:.88rem;line-height:1.5;margin:10px 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9em}
+p code,li code,td code{background:var(--code);border-radius:5px;padding:1px 5px}
+.tw{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--surface);border:1px solid var(--border)}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{font-weight:600;background:var(--code)}
+.cap{color:var(--muted);font-size:.95rem}
+.box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px 18px 12px}
+footer{border-top:1px solid var(--border);margin-top:48px;padding:20px 0 40px;color:var(--muted);font-size:.92rem}</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+<h1>gifshrink: make a GIF smaller with ffmpeg</h1>
+<p class="sub">One Python file, no dependencies. Shrink a GIF by width, frames or colors, or ask for a target size. Nothing is uploaded.</p>
+<div class="btns"><a class="btn" href="https://github.com/0xnirlin/gif-compressor">View on GitHub</a><a class="btn ghost" href="#install">Install</a></div>
+<nav class="jump" aria-label="On this page"><a href="#what">What it does</a><a href="#install">Install</a><a href="#examples">Usage examples</a><a href="#numbers">Real sizes</a><a href="#why">Why is my GIF so big?</a><a href="#browser">Prefer a browser?</a><a href="#faq">FAQ</a></nav>
+</div></header>
+<main class="wrap">
+<section id="what">
+<h2>What it does</h2>
+
+<p><code>gifshrink</code> makes an existing GIF smaller with ffmpeg. It is one Python file with no dependencies and an optional target file size. It needs ffmpeg and nothing else: no gifsicle, no ImageMagick.</p>
+<ul>
+<li>Rebuilds the palette from the GIF's own frames (palettegen and paletteuse, in one ffmpeg call), with as many colors as you allow.</li>
+<li>Drops frames with <code>--fps 8</code> or <code>--every 2</code> (keep every 2nd frame). The total duration stays the same, so the GIF plays at the same speed with fewer, longer frames.</li>
+<li>Scales down with <code>--width</code>. It never scales up.</li>
+<li>With <code>--target-size 500K</code> it steps through lower fps, smaller width and fewer colors until the file fits, prints every try, and exits with code 3 and no file if nothing fits.</li>
+<li>Keeps the input's loop count unless you pass <code>--loop</code> or <code>--once</code>.</li>
+<li>Never touches the original. The result goes to <code>name.small.gif</code> unless you pick <code>-o</code>.</li>
+<li>Runs on your machine. Nothing is uploaded.</li>
+</ul>
+</section>
+<section id="install">
+<h2>Install</h2>
+
+<p>You need Python 3.8 or newer and ffmpeg on your PATH. There are no Python packages to install.</p>
+<pre><code># ffmpeg
+brew install ffmpeg            # macOS
+sudo apt install ffmpeg        # Debian, Ubuntu
+winget install ffmpeg          # Windows
+
+# gifshrink
+pipx install git+https://github.com/0xnirlin/gif-compressor</code></pre>
+<p>Or skip the install. The tool is the single file <code>gifshrink.py</code>. Clone the repo and run it directly:</p>
+<pre><code>git clone https://github.com/0xnirlin/gif-compressor
+cd gif-compressor
+./gifshrink in.gif
+python3 gifshrink.py in.gif</code></pre>
+</section>
+<section id="examples">
+<h2>Usage examples</h2>
+
+<h3>1. No options</h3>
+<p>Rebuilds the palette with 128 colors.</p>
+<pre><code>gifshrink in.gif</code></pre>
+<h3>2. Narrower and fewer colors</h3>
+<pre><code>gifshrink in.gif --width 320 --colors 64</code></pre>
+<h3>3. Half the frames, same duration</h3>
+<pre><code>gifshrink in.gif --every 2</code></pre>
+<h3>4. No dithering</h3>
+<p>Flat colors, good for logos and screen recordings.</p>
+<pre><code>gifshrink in.gif --colors 128 --dither none</code></pre>
+<h3>5. Fit under a size</h3>
+<p>Steps through fps, width and colors until it fits under 2 MB.</p>
+<pre><code>gifshrink in.gif --target-size 2M -o small.gif --overwrite</code></pre>
+<p>Example output with <code>--target-size</code> (the <code>testsrc2</code> test GIF from the table below):</p>
+<pre><code>try  1/15 as requested   320 px  keep fps  256 colors  -&gt;  264.1 KB  too big
+try  2/15 fps 12         320 px  12 fps  256 colors  -&gt;  212.2 KB  too big
+try  3/15 width 272      272 px  12 fps  256 colors  -&gt;  245.3 KB  too big
+try  4/15 128 colors     272 px  12 fps  128 colors  -&gt;  220.5 KB  too big
+try  5/15 fps 10         272 px  10 fps  128 colors  -&gt;  185.1 KB  too big
+try  6/15 width 224      224 px  10 fps  128 colors  -&gt;  143.1 KB  too big
+try  7/15 64 colors      224 px  10 fps   64 colors  -&gt;  123.3 KB  too big
+try  8/15 fps 8          224 px  8 fps   64 colors  -&gt;  102.2 KB  too big
+try  9/15 width 176      176 px  8 fps   64 colors  -&gt;  73.9 KB  fits
+chose: 176 px wide, 8 fps, 64 colors (reduced to width 176)
+wrote ex.gif
+            before                   after
+size        264.1 KB (270460 bytes)  73.9 KB (75635 bytes)  -72%
+dimensions  320 x 180                176 x 100
+frames      45                       24
+duration    3.00 s                   3.01 s
+loop        loops forever            loops forever</code></pre>
+<p>If nothing fits you get this, and no file is written:</p>
+<pre><code>gifshrink: error: could not fit 1.0 KB. The smallest try was 14.6 KB (96 px wide, 5 fps, 16 colors). No file was written. Ask for a larger --target-size, or cut the GIF shorter first.</code></pre>
+</section>
+<section id="numbers">
+<h2>Real sizes</h2>
+
+<p>These numbers are measured, not estimated. Three synthetic 3 second GIFs, 320x180, 15 fps, 45 frames, made with ffmpeg 8.0.1 and a palette built from their own frames, which is how a well-made GIF is usually exported. <code>testsrc2</code> is a busy test pattern with sharp text and many colors. <code>smooth</code> is a slow color swirl, the hard case for GIF because every pixel changes a little in every frame. <code>grain</code> is the same swirl with film grain added. Sizes are in KB (1024 bytes). SSIM compares the new GIF with the original at 320x180 and 15 fps: 1.000 is identical, lower is worse. It is shown for testsrc2 and smooth only, because on grain it mostly measures the grain.</p>
+<div class="tw"><table><thead><tr><th>Command</th><th>testsrc2</th><th>smooth</th><th>grain</th></tr></thead><tbody>
+<tr><td>original GIF</td><td>264.1 KB</td><td>1191.4 KB</td><td>1942.3 KB</td></tr>
+<tr><td><code>gifshrink in.gif</code> (128 colors)</td><td>249.2 KB, -6% (SSIM 0.985)</td><td>1212.6 KB, +2% (SSIM 0.828)</td><td>1622.3 KB, -16%</td></tr>
+<tr><td><code>--colors 64</code></td><td>216.2 KB, -18% (SSIM 0.968)</td><td>1064.2 KB, -11% (SSIM 0.701)</td><td>1318.8 KB, -32%</td></tr>
+<tr><td><code>--colors 128 --dither none</code></td><td>223.0 KB, -16% (SSIM 0.987)</td><td>992.2 KB, -17% (SSIM 0.915)</td><td>1581.3 KB, -19%</td></tr>
+<tr><td><code>--width 240</code></td><td>249.7 KB, -5% (SSIM 0.862)</td><td>769.6 KB, -35% (SSIM 0.762)</td><td>1052.3 KB, -46%</td></tr>
+<tr><td><code>--fps 8</code></td><td>143.4 KB, -46% (SSIM 0.939)</td><td>658.5 KB, -45% (SSIM 0.827)</td><td>1036.3 KB, -47%</td></tr>
+<tr><td><code>--every 2</code></td><td>137.7 KB, -48% (SSIM 0.936)</td><td>632.9 KB, -47% (SSIM 0.819)</td><td>991.9 KB, -49%</td></tr>
+<tr><td><code>--width 240 --fps 10 --colors 64</code></td><td>132.9 KB, -50% (SSIM 0.808)</td><td>389.1 KB, -67% (SSIM 0.623)</td><td>464.3 KB, -76%</td></tr>
+<tr><td><code>--target-size 250K</code></td><td>212.2 KB, -20% (320 px, 12 fps)</td><td>179.9 KB, -85% (176 px, 8 fps, 64 colors)</td><td>202.6 KB, -90% (176 px, 8 fps, 64 colors)</td></tr>
+<tr><td><code>--target-size 100K</code></td><td>73.9 KB, -72% (176 px, 8 fps, 64 colors)</td><td>60.6 KB, -95% (128 px, 6 fps, 32 colors)</td><td>64.5 KB, -97% (128 px, 6 fps, 32 colors)</td></tr>
+</tbody></table></div>
+<p class="cap">The SSIM for the narrower GIFs is measured after stretching them back to 320 px, so it counts the lost sharpness as well.</p>
+<ul>
+<li><strong>Dropping frames is the reliable saving.</strong> <code>--fps 8</code> and <code>--every 2</code> took 45% to 49% off all three GIFs, whatever the picture.</li>
+<li><strong>Fewer colors can help a lot or not at all.</strong> 64 colors took 32% off the grainy GIF and 18% off the busy one. On smooth, plain 128 colors made the file 2% bigger, and the tool warned that it was not smaller.</li>
+<li><strong>A narrower GIF is not always much smaller.</strong> On testsrc2, 240 px took only 5% off. On the two swirls the same step took 35% and 46%.</li>
+<li><strong><code>--target-size</code> picks the settings for you.</strong> For testsrc2 at 250K it only needed 12 fps. For the swirls it needed a smaller width, fewer frames and fewer colors together.</li>
+<li><strong>Grain is expensive.</strong> The same swirl with grain is 63% bigger (1191.4 KB to 1942.3 KB).</li>
+<li>Your GIFs will behave differently. Run yours with <code>--target-size</code> and look at the result.</li>
+</ul>
+<p>If the place you post to takes MP4 or WebM, use that instead. On the three test GIFs, a plain <code>ffmpeg -i in.gif -pix_fmt yuv420p -c:v libx264 -crf 23 out.mp4</code> gave 63.0 KB (from 264.1 KB), 78.9 KB (from 1191.4 KB) and 266.9 KB (from 1942.3 KB).</p>
+</section>
+<section id="why">
+<h2>Why is my GIF so big?</h2>
+
+<p>A GIF stores every frame as its own small picture, with at most 256 colors each. There is no motion prediction like in MP4. So the size is roughly pixels per frame, times the number of frames, times how hard the picture is to store.</p>
+<ol>
+<li><strong>Width and height.</strong> Halving the width cuts the pixels in every frame to a quarter. This is usually the biggest lever, but see the table: on sharp text and lines, scaling can add dither that eats part of the gain.</li>
+<li><strong>Frame count.</strong> A 15 fps GIF holds 15 pictures a second. Going to 8 fps holds about half as many, and the clip still plays for the same time.</li>
+<li><strong>Length.</strong> Every extra second adds every frame again. Cutting the clip shorter beats every other setting. This tool does not trim, so cut first.</li>
+<li><strong>Noise and grain.</strong> Film grain and fine gradients change a little in every frame, so every frame has to be stored in full.</li>
+<li><strong>Dither.</strong> Dots are detail, and detail costs bytes. <code>--dither none</code> leaves flat colors and can be smaller, but smooth gradients show steps.</li>
+<li><strong>Colors.</strong> Fewer colors help a little, mostly on pictures that were using all 256.</li>
+</ol>
+</section>
+<section id="browser">
+<h2>Prefer a browser?</h2>
+<p>If you do not want to install anything, try the <a href="https://getziztu.com/tools/gif-compressor?utm_source=github&amp;utm_medium=pages&amp;utm_campaign=links-2026-10-31">free GIF compressor</a> on Ziztu. It is free, needs no account, takes GIFs up to 50 MB and allows 10 GIFs an hour. You pick a width, a frame rate and a number of colors.</p>
+</section>
+<section id="faq">
+<h2>FAQ</h2>
+<h3>Does it need gifsicle?</h3>
+<p>No, only ffmpeg. There is no lossy gifsicle mode. The size comes from the palette, the frames and the width, and <code>--target-size</code> picks them for you.</p>
+<h3>Will it look worse?</h3>
+<p>A smaller file has less to show. A narrower GIF looks softer, fewer frames look less smooth, and fewer colors can show steps in gradients. Change one setting at a time and look at the result, or use <code>--target-size</code> and let it take the smallest steps that fit.</p>
+<h3>Does the GIF keep its speed when frames are dropped?</h3>
+<p>Yes. Each kept frame is shown for longer, so the total duration is the same.</p>
+<h3>Does it keep the loop count?</h3>
+<p>Yes. A GIF that loops forever still loops forever, one that repeats 3 times still repeats 3 times, and one with no loop block still plays once. Pass <code>--loop N</code> or <code>--once</code> to change it.</p>
+<h3>What if --target-size cannot be met?</h3>
+<p>It exits with code 3, prints the smallest size it reached, and writes nothing. An old output file with the same name is left alone.</p>
+<h3>Can the result be bigger than the original?</h3>
+<p>Yes, if the GIF was already well made. The tool tells you when the new file is not smaller. Use <code>--width</code>, <code>--fps</code> or <code>--target-size</code> to make it smaller.</p>
+<h3>Does it keep transparency?</h3>
+<p>Yes. A transparent background stays transparent. GIF has no partial transparency, so a pixel is either clear or solid.</p>
+<h3>Will it upscale?</h3>
+<p>No. It never goes above the GIF's own width or frame rate.</p>
+<h3>It says ffmpeg is not found.</h3>
+<p>Install ffmpeg (see Install) and open a new terminal so the PATH updates. Check with <code>ffmpeg -version</code>.</p>
+<h3>Which Python?</h3>
+<p>3.8 or newer. There are no third-party packages.</p>
+</section>
+
+</main>
+<footer><div class="wrap">
+<p>MIT License. Copyright (c) 2026 Ziztu. Read the <a href="https://github.com/0xnirlin/gif-compressor/blob/main/LICENSE">licence</a> and the <a href="https://github.com/0xnirlin/gif-compressor">source code</a> on GitHub.</p>
+</div></footer>
+</body>
+</html>
